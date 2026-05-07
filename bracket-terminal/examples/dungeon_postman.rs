@@ -344,18 +344,27 @@ impl State {
         state
     }
 
-    fn try_move_player(&mut self, dx: i32, dy: i32) {
+    /// Returns true only if the player actually moved to a new tile.
+    fn try_move_player(&mut self, dx: i32, dy: i32) -> bool {
         let current_pos = self.player_pos;
         let (cx, cy) = xy(self.player_pos);
         let x = cx + dx;
         let y = cy + dy;
         if !(0..MAP_W).contains(&x) || !(0..MAP_H).contains(&y) {
-            return;
+            return false;
         }
         let new_pos = self.map.idx(x, y);
         if self.map.tiles[new_pos] == TileType::Wall {
-            return;
+            return false;
         }
+
+        // Stepping onto a monster tile is immediate defeat.
+        if self.monsters.iter().any(|m| m.pos == new_pos) {
+            self.run_state = RunState::Lost;
+            self.log = hud("You walked into a goblin! GAME OVER");
+            return false;
+        }
+
         self.player_pos = new_pos;
 
         // Pick up the key if the player steps on it.
@@ -371,7 +380,7 @@ impl State {
                 self.log = hud("The exit is locked — find the key (k) first!");
                 // Step back: don't allow entry without the key.
                 self.player_pos = current_pos;
-                return;
+                return false;
             }
             if self.level < MAX_LEVEL {
                 self.run_state = RunState::LevelClear;
@@ -381,6 +390,8 @@ impl State {
                 self.log = hud("All levels cleared! GAME COMPLETE!");
             }
         }
+
+        true
     }
 
     fn push_toast(&mut self, message: &'static str, color: RGB) {
@@ -702,28 +713,25 @@ impl GameState for State {
         match self.run_state {
             RunState::Running => {
                 self.update_toasts(ctx.frame_time_ms);
-                let mut player_moved = false;
-                if let Some(key) = ctx.key {
+                let player_moved = if let Some(key) = ctx.key {
                     match key {
                         VirtualKeyCode::Up | VirtualKeyCode::W | VirtualKeyCode::Numpad8 => {
-                            self.try_move_player(0, -1);
-                            player_moved = true;
+                            self.try_move_player(0, -1)
                         }
                         VirtualKeyCode::Down | VirtualKeyCode::S | VirtualKeyCode::Numpad2 => {
-                            self.try_move_player(0, 1);
-                            player_moved = true;
+                            self.try_move_player(0, 1)
                         }
                         VirtualKeyCode::Left | VirtualKeyCode::A | VirtualKeyCode::Numpad4 => {
-                            self.try_move_player(-1, 0);
-                            player_moved = true;
+                            self.try_move_player(-1, 0)
                         }
                         VirtualKeyCode::Right | VirtualKeyCode::D | VirtualKeyCode::Numpad6 => {
-                            self.try_move_player(1, 0);
-                            player_moved = true;
+                            self.try_move_player(1, 0)
                         }
-                        _ => {}
+                        _ => false,
                     }
-                }
+                } else {
+                    false
+                };
 
                 if player_moved {
                     self.update_fov();
