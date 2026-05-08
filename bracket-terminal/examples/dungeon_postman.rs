@@ -191,7 +191,7 @@ struct Monster {
 
 // ── Game state ────────────────────────────────────────────────────────────────
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 enum RunState {
     Running,
     LevelClear,
@@ -792,4 +792,197 @@ fn main() -> BError {
         .with_title("Dungeon Postman")
         .build()?;
     main_loop(context, State::build(1))
+}
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Minimal State with a horizontal floor corridor at y=2, x=1..=5.
+    /// Player starts at (3, 2). No monsters, no key, no toasts.
+    fn minimal_state() -> State {
+        let mut map = Map::new();
+        for x in 1i32..=5 {
+            let i = map.idx(x, 2);
+            map.tiles[i] = TileType::Floor;
+        }
+        let player_pos = map.idx(3, 2);
+        State {
+            player_pos,
+            map,
+            monsters: Vec::new(),
+            run_state: RunState::Running,
+            log: hud("test"),
+            key_status_line: hud("test"),
+            level_clear_title: String::new(),
+            level_clear_prompt: String::new(),
+            level: 1,
+            monster_timer: 0.0,
+            rng: RandomNumberGenerator::seeded(42),
+            key_pos: None,
+            has_key: false,
+            toasts: VecDeque::new(),
+            fov_toast_cooldown: 0.0,
+        }
+    }
+
+    // ── xy / idx ──────────────────────────────────────────────────────────────
+
+    #[test]
+    fn xy_and_idx_are_consistent() {
+        let map = Map::new();
+        for y in 0i32..MAP_H {
+            for x in 0i32..MAP_W {
+                assert_eq!(xy(map.idx(x, y)), (x, y));
+            }
+        }
+    }
+
+    // ── hud ───────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn hud_pads_short_string_to_80_chars() {
+        let s = hud("hi");
+        assert_eq!(s.len(), 80);
+        assert!(s.starts_with("hi"));
+    }
+
+    // ── Movement rules ────────────────────────────────────────────────────────
+
+    #[test]
+    fn floor_movement_returns_true_and_updates_position() {
+        let mut state = minimal_state();
+        let start = state.player_pos;
+        let moved = state.try_move_player(1, 0); // (3,2) → (4,2): floor
+        assert!(moved);
+        assert_eq!(state.player_pos, state.map.idx(4, 2));
+        assert_ne!(state.player_pos, start);
+        assert_eq!(state.run_state, RunState::Running);
+    }
+
+    #[test]
+    fn wall_blocks_movement_and_returns_false() {
+        let mut state = minimal_state();
+        let start = state.player_pos;
+        // (3,1) is wall — moving up is blocked
+        let moved = state.try_move_player(0, -1);
+        assert!(!moved);
+        assert_eq!(state.player_pos, start);
+        assert_eq!(state.run_state, RunState::Running);
+    }
+
+    #[test]
+    fn out_of_bounds_blocks_movement_and_returns_false() {
+        let mut state = minimal_state();
+        // Place player at the left edge (x=0) and try to step further left
+        let edge = state.map.idx(0, 2);
+        state.map.tiles[edge] = TileType::Floor;
+        state.player_pos = edge;
+        let moved = state.try_move_player(-1, 0); // x would become -1
+        assert!(!moved);
+        assert_eq!(state.player_pos, edge);
+    }
+
+    // ── Monster collision ─────────────────────────────────────────────────────
+
+    #[test]
+    fn stepping_on_monster_causes_immediate_defeat() {
+        let mut state = minimal_state();
+        let monster_pos = state.map.idx(4, 2);
+        state.monsters.push(Monster {
+            pos: monster_pos,
+            alerted: false,
+            last_known_pos: None,
+        });
+        let moved = state.try_move_player(1, 0); // step right onto monster
+        assert!(!moved);
+        assert_eq!(state.run_state, RunState::Lost);
+        assert_eq!(state.player_pos, state.map.idx(3, 2)); // position unchanged
+    }
+
+    #[test]
+    fn monster_moving_onto_player_causes_defeat() {
+        let mut state = minimal_state();
+        // Monster at (2,2), player at (3,2) — one step apart
+        let monster_pos = state.map.idx(2, 2);
+        state.monsters.push(Monster {
+            pos: monster_pos,
+            alerted: false,
+            last_known_pos: None,
+        });
+        // Mark monster tile as visible so the A* chase branch fires
+        state.map.visible[monster_pos] = true;
+        state.move_monsters();
+        assert_eq!(state.run_state, RunState::Lost);
+    }
+
+    // ── Key and exit gating ───────────────────────────────────────────────────
+
+    #[test]
+    fn player_picks_up_key_on_step() {
+        let mut state = minimal_state();
+        let key_pos = state.map.idx(4, 2);
+        state.key_pos = Some(key_pos);
+        let moved = state.try_move_player(1, 0); // step onto key tile
+        assert!(moved);
+        assert!(state.has_key);
+        assert!(state.key_pos.is_none());
+    }
+
+    #[test]
+    fn exit_without_key_is_blocked_and_position_restored() {
+        let mut state = minimal_state();
+        let exit_pos = state.map.idx(4, 2);
+        state.map.tiles[exit_pos] = TileType::Exit;
+        let start = state.player_pos;
+        let moved = state.try_move_player(1, 0); // attempt exit without key
+        assert!(!moved);
+        assert_eq!(state.player_pos, start);
+        assert_eq!(state.run_state, RunState::Running);
+    }
+
+    #[test]
+    fn exit_with_key_on_non_final_level_triggers_level_clear() {
+        let mut state = minimal_state();
+        let exit_pos = state.map.idx(4, 2);
+        state.map.tiles[exit_pos] = TileType::Exit;
+        state.has_key = true;
+        state.level = 1; // non-final
+        let moved = state.try_move_player(1, 0);
+        assert!(moved);
+        assert_eq!(state.run_state, RunState::LevelClear);
+    }
+
+    #[test]
+    fn exit_with_key_on_final_level_triggers_game_clear() {
+        let mut state = minimal_state();
+        let exit_pos = state.map.idx(4, 2);
+        state.map.tiles[exit_pos] = TileType::Exit;
+        state.has_key = true;
+        state.level = MAX_LEVEL;
+        let moved = state.try_move_player(1, 0);
+        assert!(moved);
+        assert_eq!(state.run_state, RunState::GameClear);
+    }
+
+    // ── Toast system ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn push_toast_deduplicates_same_message() {
+        let mut state = minimal_state();
+        state.push_toast(TOAST_FOV, RGB::named(WHITE));
+        state.push_toast(TOAST_FOV, RGB::named(WHITE));
+        assert_eq!(state.toasts.len(), 1);
+    }
+
+    #[test]
+    fn update_toasts_removes_expired_entries() {
+        let mut state = minimal_state();
+        state.push_toast(TOAST_FOV, RGB::named(WHITE));
+        assert_eq!(state.toasts.len(), 1);
+        state.update_toasts(TOAST_DURATION_MS + 1.0);
+        assert!(state.toasts.is_empty());
+    }
 }
