@@ -75,7 +75,7 @@ impl ExactSizeIterator for RgbLerp {
     /// Returns the `n_steps` component of the iterator
     #[inline]
     fn len(&self) -> usize {
-        self.n_steps
+        self.n_steps.saturating_add(1).saturating_sub(self.step)
     }
 }
 
@@ -132,7 +132,7 @@ impl Iterator for HsvLerp {
 impl ExactSizeIterator for HsvLerp {
     #[inline]
     fn len(&self) -> usize {
-        self.n_steps
+        self.n_steps.saturating_add(1).saturating_sub(self.step)
     }
 }
 
@@ -296,14 +296,26 @@ mod tests {
     }
 
     #[test]
-    fn rgb_lerp_len_returns_configured_steps() {
-        let lerp = RgbLerp::new(
+    fn rgb_lerp_len_returns_remaining_items() {
+        let mut lerp = RgbLerp::new(
             RGB::from_f32(0.0, 0.0, 0.0),
             RGB::from_f32(1.0, 1.0, 1.0),
             2,
         );
 
+        assert_eq!(lerp.len(), 3);
+
+        lerp.next();
         assert_eq!(lerp.len(), 2);
+
+        lerp.next();
+        assert_eq!(lerp.len(), 1);
+
+        lerp.next();
+        assert_eq!(lerp.len(), 0);
+
+        lerp.next();
+        assert_eq!(lerp.len(), 0);
     }
 
     #[test]
