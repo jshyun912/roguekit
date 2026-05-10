@@ -1,6 +1,7 @@
 #![warn(clippy::pedantic)]
 bracket_terminal::add_wasm_support!();
 
+use bracket_rex::prelude::XpFile;
 use bracket_terminal::prelude::*;
 
 struct State {

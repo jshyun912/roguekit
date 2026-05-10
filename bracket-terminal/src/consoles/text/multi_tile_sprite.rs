@@ -1,6 +1,7 @@
-use crate::prelude::{string_to_cp437, BTerm, DrawBatch, FontCharType, Tile, XpFile};
+use crate::prelude::{string_to_cp437, BTerm, DrawBatch, FontCharType, Tile};
 use bracket_color::prelude::{ColorPair, RGBA};
 use bracket_geometry::prelude::Point;
+use bracket_rex::prelude::XpFile;
 
 /// Represents a sprite consisting of multiple glyphs/colors, occupying multiple console locations.
 pub struct MultiTileSprite {

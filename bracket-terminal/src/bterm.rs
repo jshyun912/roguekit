@@ -4,12 +4,13 @@ use crate::{
     prelude::{
         init_raw, BEvent, CharacterTranslationMode, Console, FlexiConsole, Font, FontCharType,
         GameState, InitHints, Radians, RenderSprite, Shader, SimpleConsole, SpriteConsole,
-        SpriteSheet, TextAlign, VirtualKeyCode, XpFile, XpLayer, BACKEND, INPUT,
+        SpriteSheet, TextAlign, VirtualKeyCode, BACKEND, INPUT,
     },
     BResult,
 };
 use bracket_color::prelude::RGBA;
 use bracket_geometry::prelude::{Point, PointF, Rect};
+use bracket_rex::prelude::{XpFile, XpLayer};
 use parking_lot::Mutex;
 use std::convert::*;
 
@@ -285,7 +286,7 @@ impl BTerm {
     /// Render a REX Paint (https://www.gridsagegames.com/rexpaint/) file as a sprite.
     /// The sprite will be offset by offset_x and offset_y.
     /// Transparent cells will not be rendered.
-    pub fn render_xp_sprite(&mut self, xp: &super::rex::XpFile, x: i32, y: i32) {
+    pub fn render_xp_sprite(&mut self, xp: &XpFile, x: i32, y: i32) {
         let mut bi = BACKEND_INTERNAL.lock();
         super::rex::xp_to_console(xp, &mut bi.consoles[self.active_console].console, x, y);
     }

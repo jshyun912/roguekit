@@ -1,6 +1,7 @@
-use crate::prelude::{FontCharType, XpLayer};
+use crate::prelude::FontCharType;
 use bracket_color::prelude::RGBA;
 use bracket_geometry::prelude::{Point, Rect};
+use bracket_rex::prelude::XpLayer;
 use std::any::Any;
 
 /// The internal storage type for tiles in a simple console.

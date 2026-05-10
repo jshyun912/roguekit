@@ -1,6 +1,7 @@
-use crate::prelude::{CharacterTranslationMode, Console, FontCharType, TextAlign, XpLayer};
+use crate::prelude::{CharacterTranslationMode, Console, FontCharType, TextAlign};
 use bracket_color::prelude::RGBA;
 use bracket_geometry::prelude::Rect;
+use bracket_rex::prelude::XpLayer;
 use std::any::Any;
 
 /// Internal storage structure for sparse tiles.

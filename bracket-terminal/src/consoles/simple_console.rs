@@ -1,9 +1,10 @@
 use crate::prelude::{
     string_to_cp437, to_cp437, CharacterTranslationMode, ColoredTextSpans, Console, FontCharType,
-    TextAlign, Tile, XpLayer,
+    TextAlign, Tile,
 };
 use bracket_color::prelude::*;
 use bracket_geometry::prelude::Rect;
+use bracket_rex::prelude::XpLayer;
 use std::any::Any;
 
 /// A simple console with background color.

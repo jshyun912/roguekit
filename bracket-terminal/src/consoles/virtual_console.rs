@@ -3,10 +3,11 @@
 
 use crate::prelude::{
     string_to_cp437, to_cp437, BTerm, CharacterTranslationMode, ColoredTextSpans, Console,
-    DrawBatch, FontCharType, TextAlign, Tile, XpLayer,
+    DrawBatch, FontCharType, TextAlign, Tile,
 };
 use bracket_color::prelude::*;
 use bracket_geometry::prelude::{Point, Rect};
+use bracket_rex::prelude::XpLayer;
 use std::any::Any;
 
 pub struct VirtualConsole {

@@ -1,10 +1,11 @@
 use crate::prelude::{
     string_to_cp437, to_cp437, CharacterTranslationMode, ColoredTextSpans, Console, FontCharType,
-    TextAlign, XpLayer,
+    TextAlign,
 };
 use bracket_color::prelude::RGBA;
 use bracket_geometry::prelude::{PointF, Rect};
 use bracket_rex::prelude::XpColor;
+use bracket_rex::prelude::XpLayer;
 use ultraviolet::Vec2;
 
 use std::any::Any;
