@@ -1,7 +1,7 @@
 #[cfg(feature = "parsing")]
 use crate::prelude::{parse_dice_string, DiceParseError, DiceType};
 use rand::{Rng, RngCore, SeedableRng};
-use rand_xorshift::XorShiftRng;
+use rand_chacha::ChaCha12Rng;
 
 #[cfg(feature = "serde")]
 use serde_crate::{Deserialize, Serialize};
@@ -37,20 +37,20 @@ fn get_seed() -> u64 {
     serde(crate = "serde_crate")
 )]
 pub struct RandomNumberGenerator {
-    rng: XorShiftRng,
+    rng: ChaCha12Rng,
 }
 
 impl RandomNumberGenerator {
     /// Creates a new RNG from a randomly generated seed
-    #[allow(clippy::new_without_default)] // XorShiftRng doesn't have a Default, so we don't either
+    #[allow(clippy::new_without_default)] // ChaCha12Rng doesn't have a Default, so we don't either
     pub fn new() -> RandomNumberGenerator {
-        let rng: XorShiftRng = SeedableRng::seed_from_u64(get_seed());
+        let rng: ChaCha12Rng = SeedableRng::seed_from_u64(get_seed());
         RandomNumberGenerator { rng }
     }
 
     /// Creates a new RNG from a specific seed
     pub fn seeded(seed: u64) -> RandomNumberGenerator {
-        let rng: XorShiftRng = SeedableRng::seed_from_u64(seed);
+        let rng: ChaCha12Rng = SeedableRng::seed_from_u64(seed);
         RandomNumberGenerator { rng }
     }
 
@@ -127,7 +127,7 @@ impl RandomNumberGenerator {
 
     /// Get underlying RNG implementation for use in traits / algorithms exposed by
     /// other crates (eg. `rand` itself)
-    pub fn get_rng(&mut self) -> &mut XorShiftRng {
+    pub fn get_rng(&mut self) -> &mut impl RngCore {
         &mut self.rng
     }
 }
