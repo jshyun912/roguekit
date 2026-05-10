@@ -1,34 +1,10 @@
 #[cfg(feature = "parsing")]
 use crate::prelude::{parse_dice_string, DiceParseError, DiceType};
-use rand::{Rng, RngCore, SeedableRng};
+use rand::{rngs::OsRng, Rng, RngCore, SeedableRng};
 use rand_chacha::ChaCha12Rng;
 
 #[cfg(feature = "serde")]
 use serde_crate::{Deserialize, Serialize};
-
-#[cfg(target_arch = "wasm32")]
-fn get_seed() -> u64 {
-    let mut buf = [0u8; 8];
-    if crate::js_seed::getrandom_inner(&mut buf).is_ok() {
-        u64::from_be_bytes(buf)
-    } else {
-        js_sys::Date::now() as u64
-    }
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn get_seed() -> u64 {
-    let mut buf = [0u8; 8];
-    if getrandom::getrandom(&mut buf).is_ok() {
-        u64::from_be_bytes(buf)
-    } else {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs()
-    }
-}
 
 #[derive(Clone)]
 #[cfg_attr(
@@ -44,7 +20,7 @@ impl RandomNumberGenerator {
     /// Creates a new RNG from a randomly generated seed
     #[allow(clippy::new_without_default)] // ChaCha12Rng doesn't have a Default, so we don't either
     pub fn new() -> RandomNumberGenerator {
-        let rng: ChaCha12Rng = SeedableRng::seed_from_u64(get_seed());
+        let rng = ChaCha12Rng::from_rng(OsRng).expect("failed to seed ChaCha12Rng from OS RNG");
         RandomNumberGenerator { rng }
     }
 
