@@ -76,6 +76,64 @@ impl Rect {
         }
     }
 
+    /// Returns a rectangle with ordered coordinates.
+    #[must_use]
+    pub fn normalized(&self) -> Rect {
+        Rect {
+            x1: self.x1.min(self.x2),
+            y1: self.y1.min(self.y2),
+            x2: self.x1.max(self.x2),
+            y2: self.y1.max(self.y2),
+        }
+    }
+
+    /// Returns the rectangle's area.
+    #[must_use]
+    pub fn area(&self) -> i32 {
+        self.width() * self.height()
+    }
+
+    /// Returns true if the rectangle has zero width or height.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.width() == 0 || self.height() == 0
+    }
+
+    /// Returns true if the other rectangle's bounds are fully inside this rectangle.
+    #[must_use]
+    pub fn contains_rect(&self, other: &Rect) -> bool {
+        let bounds = self.normalized();
+        let candidate = other.normalized();
+
+        candidate.x1 >= bounds.x1
+            && candidate.x2 <= bounds.x2
+            && candidate.y1 >= bounds.y1
+            && candidate.y2 <= bounds.y2
+    }
+
+    /// Returns the non-empty overlapping area between this rectangle and another.
+    #[must_use]
+    pub fn intersection(&self, other: &Rect) -> Option<Rect> {
+        let self_bounds = self.normalized();
+        let other_bounds = other.normalized();
+
+        let left = self_bounds.x1.max(other_bounds.x1);
+        let top = self_bounds.y1.max(other_bounds.y1);
+        let right = self_bounds.x2.min(other_bounds.x2);
+        let bottom = self_bounds.y2.min(other_bounds.y2);
+
+        if left < right && top < bottom {
+            Some(Rect {
+                x1: left,
+                x2: right,
+                y1: top,
+                y2: bottom,
+            })
+        } else {
+            None
+        }
+    }
+
     /// Returns true if this overlaps with other
     #[must_use]
     pub fn intersect(&self, other: &Rect) -> bool {
@@ -156,6 +214,48 @@ mod tests {
         let rect = Rect::with_size(0, 0, 10, 10);
         assert!(rect.width() == 10);
         assert!(rect.height() == 10);
+    }
+
+    #[test]
+    fn test_normalized() {
+        let rect = Rect::with_exact(10, 20, 5, 15);
+        assert_eq!(rect.normalized(), Rect::with_exact(5, 15, 10, 20));
+    }
+
+    #[test]
+    fn test_area() {
+        let rect = Rect::with_size(0, 0, 10, 5);
+        assert_eq!(rect.area(), 50);
+    }
+
+    #[test]
+    fn test_is_empty() {
+        assert!(Rect::with_size(0, 0, 0, 5).is_empty());
+        assert!(Rect::with_size(0, 0, 5, 0).is_empty());
+        assert!(!Rect::with_size(0, 0, 5, 5).is_empty());
+    }
+
+    #[test]
+    fn test_contains_rect() {
+        let bounds = Rect::with_size(0, 0, 10, 10);
+        let inside = Rect::with_size(2, 2, 3, 3);
+        let outside = Rect::with_size(8, 8, 3, 3);
+
+        assert!(bounds.contains_rect(&inside));
+        assert!(!bounds.contains_rect(&outside));
+    }
+
+    #[test]
+    fn test_intersection() {
+        let bounds = Rect::with_size(0, 0, 10, 10);
+        let overlapping = Rect::with_size(5, 5, 10, 10);
+        let touching = Rect::with_size(10, 10, 5, 5);
+
+        assert_eq!(
+            bounds.intersection(&overlapping),
+            Some(Rect::with_exact(5, 5, 10, 10))
+        );
+        assert_eq!(bounds.intersection(&touching), None);
     }
 
     #[test]
