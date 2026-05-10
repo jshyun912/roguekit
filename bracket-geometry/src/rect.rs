@@ -90,7 +90,7 @@ impl Rect {
     /// Returns the rectangle's area.
     #[must_use]
     pub fn area(&self) -> i32 {
-        self.width() * self.height()
+        self.width().saturating_mul(self.height())
     }
 
     /// Returns true if the rectangle has zero width or height.
