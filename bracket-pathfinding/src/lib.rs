@@ -3,6 +3,7 @@
 mod astar;
 mod dijkstra;
 mod field_of_view;
+mod floyd_warshall;
 
 pub mod prelude {
     pub use crate::astar::*;
