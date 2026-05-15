@@ -485,18 +485,28 @@ mod tests {
         assert_rgb_eq(RGB::new(), 0.0, 0.0, 0.0);
     }
 
-    #[rstest]
-    #[case(RGB::from_f32(-1.0, 0.5, 2.0), 0.0, 0.5, 1.0)]
-    #[case(RGB::from_u8(255, 128, 0), 1.0, 128.0 / 255.0, 0.0)]
-    #[case(RGB::from((64, 128, 255)), 64.0 / 255.0, 128.0 / 255.0, 1.0)]
-    #[case(RGB::from(RGBA::from_f32(0.25, 0.5, 0.75, 0.125)), 0.25, 0.5, 0.75)]
-    fn construction_and_conversion_set_expected_components(
-        #[case] rgb: RGB,
-        #[case] r: f32,
-        #[case] g: f32,
-        #[case] b: f32,
-    ) {
-        assert_rgb_eq(rgb, r, g, b);
+    #[test]
+    fn from_f32_clamps_components() {
+        let rgb = RGB::from_f32(-1.0, 0.5, 2.0);
+        assert_rgb_eq(rgb, 0.0, 0.5, 1.0);
+    }
+
+    #[test]
+    fn from_u8_converts_components() {
+        let rgb = RGB::from_u8(255, 128, 0);
+        assert_rgb_eq(rgb, 1.0, 128.0 / 255.0, 0.0);
+    }
+
+    #[test]
+    fn tuple_conversion_uses_u8_components() {
+        let rgb = RGB::from((64, 128, 255));
+        assert_rgb_eq(rgb, 64.0 / 255.0, 128.0 / 255.0, 1.0);
+    }
+
+    #[test]
+    fn rgba_conversion_drops_alpha() {
+        let rgb = RGB::from(RGBA::from_f32(0.25, 0.5, 0.75, 0.125));
+        assert_rgb_eq(rgb, 0.25, 0.5, 0.75);
     }
 
     #[rstest]
