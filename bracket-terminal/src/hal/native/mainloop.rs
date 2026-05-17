@@ -1,8 +1,8 @@
 use super::BACKEND;
 use crate::gl_error_wrap;
 use crate::hal::*;
-use crate::prelude::{BEvent, BTerm, GameState, BACKEND_INTERNAL, INPUT};
-use crate::{clear_input_state, BResult};
+use crate::prelude::{BACKEND_INTERNAL, BEvent, BTerm, GameState, INPUT};
+use crate::{BResult, clear_input_state};
 use bracket_geometry::prelude::Point;
 use glow::HasContext;
 use glutin::surface::GlSurface;
