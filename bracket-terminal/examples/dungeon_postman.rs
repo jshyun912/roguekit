@@ -27,18 +27,13 @@ const TOAST_A_CHASE: &str = " [A* ] a_star_search(): chasing!        ";
 const TOAST_A_SEARCH: &str = " [A* ] a_star_search(): searching...    ";
 const TOAST_RNG_WANDER: &str = " [RNG] random_step(): monster wandering ";
 
-// Compile-time: every message must be exactly TOAST_WIDTH bytes (ASCII-only).
 const _: () = assert!(TOAST_RNG_MAP.len() == TOAST_WIDTH);
 const _: () = assert!(TOAST_FOV.len() == TOAST_WIDTH);
 const _: () = assert!(TOAST_A_CHASE.len() == TOAST_WIDTH);
 const _: () = assert!(TOAST_A_SEARCH.len() == TOAST_WIDTH);
 const _: () = assert!(TOAST_RNG_WANDER.len() == TOAST_WIDTH);
-// Compile-time: toast column + width must equal terminal width exactly.
 const _: () = assert!(TOAST_X as usize + TOAST_WIDTH == MAP_W as usize);
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/// Decompose a flat map index into (x, y).
 fn xy(pos: usize) -> (i32, i32) {
     (pos as i32 % MAP_W, pos as i32 / MAP_W)
 }
@@ -72,15 +67,11 @@ fn random_step(pos: usize, map: &Map, rng: &mut RandomNumberGenerator) -> usize 
     }
 }
 
-// ── Toast notification ────────────────────────────────────────────────────────
-
 struct Toast {
     message: &'static str,
     remaining_ms: f32,
     color: RGB,
 }
-
-// ── Tile types ────────────────────────────────────────────────────────────────
 
 #[derive(PartialEq, Copy, Clone)]
 enum TileType {
@@ -88,8 +79,6 @@ enum TileType {
     Floor,
     Exit,
 }
-
-// ── Map ───────────────────────────────────────────────────────────────────────
 
 struct Map {
     tiles: Vec<TileType>,
@@ -179,8 +168,6 @@ impl BaseMap for Map {
     }
 }
 
-// ── Entities ──────────────────────────────────────────────────────────────────
-
 struct Monster {
     pos: usize,
     /// True while the monster has direct line-of-sight to the player.
@@ -188,8 +175,6 @@ struct Monster {
     /// Last tile where the player was spotted; drives search behaviour after LoS breaks.
     last_known_pos: Option<usize>,
 }
-
-// ── Game state ────────────────────────────────────────────────────────────────
 
 #[derive(Debug, PartialEq)]
 enum RunState {
@@ -230,7 +215,6 @@ impl State {
             let mut map = Map::new();
             let mut rooms: Vec<Rect> = Vec::new();
 
-            // Generate rooms — attempt many placements to fill the map
             for _ in 0..30 {
                 let w = rng.range(4, 11);
                 let h = rng.range(4, 11);
@@ -252,7 +236,6 @@ impl State {
                         }
                     }
                     rooms.push(room);
-                    // Ensure enough rooms for all monsters plus start and exit
                     if rooms.len() >= (MAX_LEVEL as usize) + 2 {
                         break;
                     }
@@ -264,26 +247,19 @@ impl State {
             }
         };
 
-        // Player starts at center of first room
         let start = rooms[0].center();
         let player_pos = map.idx(start.x, start.y);
 
-        // Exit at center of last room
         let exit_center = rooms.last().unwrap().center();
         let exit_idx = map.idx(exit_center.x, exit_center.y);
         map.tiles[exit_idx] = TileType::Exit;
 
-        // Place the key in the middle room (between start and exit).
-        // If there are only two rooms, the key goes in the exit room area (player still
-        // has to reach it before stepping on ">").
         let key_room_idx = rooms.len() / 2;
         let key_center = rooms[key_room_idx].center();
         let key_idx = map.idx(key_center.x, key_center.y);
-        // Avoid placing the key on the exit tile itself.
         let key_pos = if key_idx != exit_idx {
             Some(key_idx)
         } else {
-            // Fallback 1: use the room before the exit room.
             let fallback = rooms[rooms.len().saturating_sub(2)].center();
             let fidx = map.idx(fallback.x, fallback.y);
             if fidx != exit_idx {
@@ -294,8 +270,6 @@ impl State {
             }
         };
 
-        // Place exactly `level` monsters in the non-start rooms nearest the exit.
-        // Monsters guard the path to the exit; earlier rooms remain safer.
         let monsters = rooms
             .iter()
             .skip(1) // never in start room
@@ -358,7 +332,6 @@ impl State {
             return false;
         }
 
-        // Stepping onto a monster tile is immediate defeat.
         if self.monsters.iter().any(|m| m.pos == new_pos) {
             self.run_state = RunState::Lost;
             self.log = hud("You walked into a goblin! GAME OVER");
@@ -367,7 +340,6 @@ impl State {
 
         self.player_pos = new_pos;
 
-        // Pick up the key if the player steps on it.
         if self.key_pos == Some(new_pos) {
             self.has_key = true;
             self.key_pos = None;
@@ -378,7 +350,6 @@ impl State {
         if self.map.tiles[new_pos] == TileType::Exit {
             if !self.has_key {
                 self.log = hud("The exit is locked — find the key (k) first!");
-                // Step back: don't allow entry without the key.
                 self.player_pos = current_pos;
                 return false;
             }
@@ -458,7 +429,6 @@ impl State {
             let can_see_player = self.map.visible[m_pos];
 
             *update = if can_see_player {
-                // Chase: A* toward player, update memory.
                 let path = a_star_search(m_pos, player_pos, &self.map);
                 let next = if path.success && path.steps.len() > 1 {
                     path.steps[1]
@@ -468,10 +438,8 @@ impl State {
                 (next, true, Some(player_pos))
             } else if let Some(target) = m_last_known {
                 if m_pos == target {
-                    // Reached last known tile, player gone — forget and wander.
                     (random_step(m_pos, &self.map, &mut self.rng), false, None)
                 } else {
-                    // Still heading toward memory target.
                     let path = a_star_search(m_pos, target, &self.map);
                     let next = if path.success && path.steps.len() > 1 {
                         path.steps[1]
@@ -481,7 +449,6 @@ impl State {
                     (next, false, Some(target))
                 }
             } else {
-                // Wander randomly.
                 (random_step(m_pos, &self.map, &mut self.rng), false, None)
             };
         }
@@ -563,10 +530,6 @@ impl State {
 
         self.render_map(&mut draw_batch);
 
-        // Render monsters:
-        //   - Alerted (direct LoS to player): always visible, bright red
-        //   - Non-alerted inside torch FOV: visible, dark red
-        //   - Non-alerted outside torch FOV: hidden (wandering or searching)
         for m in &self.monsters {
             let in_fov = self.map.visible[m.pos];
             if m.alerted || in_fov {
@@ -584,7 +547,6 @@ impl State {
             }
         }
 
-        // Key item — rendered only if not yet picked up
         if let Some(kpos) = self.key_pos {
             if self.map.visible[kpos] {
                 let (kx, ky) = xy(kpos);
@@ -596,7 +558,6 @@ impl State {
             }
         }
 
-        // Player
         let (px, py) = xy(self.player_pos);
         draw_batch.print_color(
             Point::new(px, py),
@@ -604,7 +565,6 @@ impl State {
             ColorPair::new(RGB::named(YELLOW), RGB::named(BLACK)),
         );
 
-        // Toast overlay: stacked in the top-right quadrant (rows 0-3, cols 40-79)
         let toast_bg = RGB::from_f32(0.05, 0.05, 0.18);
         for (i, toast) in self.toasts.iter().enumerate() {
             draw_batch.print_color(
@@ -614,14 +574,12 @@ impl State {
             );
         }
 
-        // HUD row 48: log message (pre-padded to 80 chars)
         draw_batch.print_color(
             Point::new(0, 48),
             self.log.as_str(),
             ColorPair::new(RGB::named(CYAN), RGB::named(BLACK)),
         );
 
-        // HUD row 49: key status indicator (pre-padded string, no allocation per frame)
         draw_batch.print_color(
             Point::new(0, 49),
             self.key_status_line.as_str(),
@@ -706,8 +664,6 @@ impl State {
     }
 }
 
-// ── Game loop ─────────────────────────────────────────────────────────────────
-
 impl GameState for State {
     fn tick(&mut self, ctx: &mut BTerm) {
         match self.run_state {
@@ -741,8 +697,6 @@ impl GameState for State {
                     }
                 }
 
-                // Monsters move on their own timer, independent of player input.
-                // Speed increases each level: level 1 = 500 ms, level 5 = 100 ms.
                 let monster_interval =
                     MONSTER_BASE_MS - (self.level - 1) as f32 * MONSTER_SPEED_STEP_MS;
                 self.monster_timer += ctx.frame_time_ms;
@@ -751,7 +705,6 @@ impl GameState for State {
                     self.move_monsters();
                 }
 
-                // Render the appropriate screen immediately on state change
                 match self.run_state {
                     RunState::Running => self.render(ctx),
                     RunState::LevelClear => self.render_level_clear(ctx),
@@ -785,16 +738,12 @@ impl GameState for State {
     }
 }
 
-// ── Entry point ───────────────────────────────────────────────────────────────
-
 fn main() -> BError {
     let context = BTermBuilder::simple80x50()
         .with_title("Dungeon Postman")
         .build()?;
     main_loop(context, State::build(1))
 }
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
@@ -828,8 +777,6 @@ mod tests {
         }
     }
 
-    // ── xy / idx ──────────────────────────────────────────────────────────────
-
     #[test]
     fn xy_and_idx_are_consistent() {
         let map = Map::new();
@@ -840,16 +787,12 @@ mod tests {
         }
     }
 
-    // ── hud ───────────────────────────────────────────────────────────────────
-
     #[test]
     fn hud_pads_short_string_to_80_chars() {
         let s = hud("hi");
         assert_eq!(s.len(), 80);
         assert!(s.starts_with("hi"));
     }
-
-    // ── Movement rules ────────────────────────────────────────────────────────
 
     #[test]
     fn floor_movement_returns_true_and_updates_position() {
@@ -885,8 +828,6 @@ mod tests {
         assert_eq!(state.player_pos, edge);
     }
 
-    // ── Monster collision ─────────────────────────────────────────────────────
-
     #[test]
     fn stepping_on_monster_causes_immediate_defeat() {
         let mut state = minimal_state();
@@ -917,8 +858,6 @@ mod tests {
         state.move_monsters();
         assert_eq!(state.run_state, RunState::Lost);
     }
-
-    // ── Key and exit gating ───────────────────────────────────────────────────
 
     #[test]
     fn player_picks_up_key_on_step() {
@@ -966,8 +905,6 @@ mod tests {
         assert!(moved);
         assert_eq!(state.run_state, RunState::GameClear);
     }
-
-    // ── Toast system ──────────────────────────────────────────────────────────
 
     #[test]
     fn push_toast_deduplicates_same_message() {
