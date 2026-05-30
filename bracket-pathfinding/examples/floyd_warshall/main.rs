@@ -4,6 +4,7 @@ use bracket_pathfinding::prelude::*;
 use common::*;
 
 fn main() {
+/*     
     let map = Map::new();
 
     // Perform the search
@@ -38,4 +39,6 @@ fn main() {
         print_color(RGB::named(WHITE), "\n");
     }
     flush_console();
+
+    */
 }

@@ -31,9 +31,9 @@ impl FloydWarshallMap {
         f
     }
 
-    
-    fn idx_helper(start_idx: usize, end_idx: usize, mapsize: usize) -> usize {
-        start_idx * mapsize + end_idx
+    // Helper for indexing the Floyd-Warshall distance map.
+    pub fn idx_helper(&self, start_idx: usize, end_idx: usize) -> usize {
+        start_idx * (self.size_x * self.size_y) + end_idx
     }
 
     pub fn build(fm: &mut FloydWarshallMap, map: &dyn BaseMap) {
@@ -41,24 +41,24 @@ impl FloydWarshallMap {
 
         for start_idx in 0..mapsize {
             for end_idx in 0..mapsize {
-                let ste_idx = Self::idx_helper(start_idx, end_idx, mapsize);
+                let ste_idx = fm.idx_helper(start_idx, end_idx);
                 fm.depth_map[ste_idx] = fm.max_depth;
             }
         }
 
         for start_idx in 0..mapsize {
             for (end_idx, depth) in map.get_available_exits(start_idx) {
-                let ste_idx = Self::idx_helper(start_idx, end_idx, mapsize);
+                let ste_idx = fm.idx_helper(start_idx, end_idx);
                 fm.depth_map[ste_idx] = depth;
             }
         }
 
         for mid_idx in 0..mapsize {
             for start_idx in 0..mapsize {
-                let stm_idx = Self::idx_helper(start_idx, mid_idx, mapsize);
+                let stm_idx = fm.idx_helper(start_idx, mid_idx);
                 for end_idx in 0..mapsize {
-                    let ste_idx = Self::idx_helper(start_idx, end_idx, mapsize);
-                    let mte_idx = Self::idx_helper(mid_idx, end_idx, mapsize);
+                    let ste_idx = fm.idx_helper(start_idx, end_idx);
+                    let mte_idx = fm.idx_helper(mid_idx, end_idx);
                     let new_depth = fm.depth_map[stm_idx] + fm.depth_map[mte_idx];
                     let prev_depth = fm.depth_map[ste_idx];
 
@@ -78,7 +78,6 @@ impl FloydWarshallMap {
         map: &dyn BaseMap,
     ) -> Option<usize> {
         let exits = map.get_available_exits(position);
-        let mapsize = fm.size_x * fm.size_y;
 
         if exits.is_empty() {
             return None;
@@ -88,7 +87,7 @@ impl FloydWarshallMap {
         let mut lowest_exit = 0;
 
         for (exit, _) in exits {
-            let pos = Self::idx_helper(position, exit, mapsize);
+            let pos = fm.idx_helper(position, exit);
             if lowest_depth > fm.depth_map[pos] {
                 lowest_exit = exit;
                 lowest_depth = fm.depth_map[pos]
@@ -108,7 +107,6 @@ impl FloydWarshallMap {
         map: &dyn BaseMap,
     ) -> Option<usize> {
         let exits = map.get_available_exits(position);
-        let mapsize = fm.size_x * fm.size_y;
 
         if exits.is_empty() {
             return None;
@@ -118,7 +116,7 @@ impl FloydWarshallMap {
         let mut highest_exit = 0;
 
         for (exit, _) in exits {
-            let pos = Self::idx_helper(position, exit, mapsize);
+            let pos = fm.idx_helper(position, exit);
             if highest_depth < fm.depth_map[pos] {
                 highest_exit = exit;
                 highest_depth = fm.depth_map[pos]
