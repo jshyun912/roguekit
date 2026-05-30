@@ -1,8 +1,8 @@
+#[cfg(not(target_arch = "wasm32"))]
+use super::{FramebufferId, TextureId};
 #[allow(unused_imports)]
 use crate::BResult;
 use glow::HasContext;
-
-use super::{FramebufferId, TextureId};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub struct Framebuffer {

@@ -1,8 +1,8 @@
 use super::BACKEND;
 use crate::gl_error_wrap;
 use crate::hal::*;
-use crate::prelude::{BEvent, BTerm, GameState, BACKEND_INTERNAL, INPUT};
-use crate::{clear_input_state, BResult};
+use crate::prelude::{BACKEND_INTERNAL, BEvent, BTerm, GameState, INPUT};
+use crate::{BResult, clear_input_state};
 use bracket_geometry::prelude::Point;
 use glow::HasContext;
 use glutin::surface::GlSurface;
@@ -280,11 +280,11 @@ pub fn main_loop<GS: GameState>(mut bterm: BTerm, mut gamestate: GS) -> BResult<
                         if let Some(key) = physical_key_to_virtual_keycode(&event.physical_key) {
                             bterm.on_key(key, 0, event.state == ElementState::Pressed);
                         }
-                        if event.state == ElementState::Pressed {
-                            if let Some(text) = event.text.as_ref() {
-                                for ch in text.chars() {
-                                    bterm.on_event(BEvent::Character { c: ch });
-                                }
+                        if event.state == ElementState::Pressed
+                            && let Some(text) = event.text.as_ref()
+                        {
+                            for ch in text.chars() {
+                                bterm.on_event(BEvent::Character { c: ch });
                             }
                         }
                     }

@@ -7,8 +7,11 @@ pub use init::*;
 mod events;
 pub use events::*;
 mod mainloop;
-use crate::hal::scaler::{default_gutter_size, ScreenScaler};
 use crate::hal::ConsoleBacking;
+#[cfg(target_arch = "wasm32")]
+use crate::hal::scaler::ScreenScaler;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::hal::scaler::{ScreenScaler, default_gutter_size};
 pub use mainloop::*;
 use parking_lot::Mutex;
 use std::any::Any;

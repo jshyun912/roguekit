@@ -50,6 +50,7 @@ pub fn setup_quad(gl: &glow::Context) -> VertexArrayId {
 
 /// Sets up a simple VAO/VBO to render a single quad
 /// Used for presenting the backing buffer and in post-process chains.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn setup_quad_gutter(
     gl: &glow::Context,
     left: f32,

@@ -7,7 +7,7 @@ pub(crate) fn default_gutter_size() -> u32 {
     8
 }
 
-#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+#[cfg(not(any(target_os = "windows", target_os = "macos", target_arch = "wasm32")))]
 pub(crate) fn default_gutter_size() -> u32 {
     // Testing showed that an 8-pixel gutter is enough to fix
     // Big Sur and Windows 11.

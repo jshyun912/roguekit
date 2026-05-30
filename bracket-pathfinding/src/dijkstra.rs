@@ -149,6 +149,7 @@ impl DijkstraMap {
         let mut open_list: VecDeque<(usize, f32)> = VecDeque::with_capacity(mapsize);
 
         for start in starts {
+            dm.map[*start] = f32::min(dm.map[*start], 0.0);
             open_list.push_back((*start, 0.0));
         }
 
@@ -180,6 +181,7 @@ impl DijkstraMap {
         let mut open_list: VecDeque<(usize, f32)> = VecDeque::with_capacity(mapsize);
 
         for start in starts {
+            dm.map[start.0] = f32::min(dm.map[start.0], start.1);
             open_list.push_back(*start);
         }
 
@@ -226,6 +228,7 @@ impl DijkstraMap {
             let mut open_list: VecDeque<(usize, f32)> = VecDeque::with_capacity(mapsize);
 
             for start in l.starts.iter().copied() {
+                l.map[start] = f32::min(l.map[start], 0.0);
                 open_list.push_back((start, 0.0));
             }
 
@@ -335,7 +338,10 @@ impl DijkstraMap {
 mod test {
     use crate::prelude::*;
     use bracket_algorithm_traits::prelude::*;
-    // 1 by 3 stripe of tiles
+    // 1 by 3 stripe of tiles.
+    //
+    // [0] --1--> [1] --2--> [2]
+    // [0] <--1-- [1] <--1-- [2]
     struct MiniMap;
     impl BaseMap for MiniMap {
         fn get_available_exits(&self, idx: usize) -> SmallVec<[(usize, f32); 10]> {
@@ -346,6 +352,60 @@ mod test {
             }
         }
     }
+    #[test]
+    fn test_new() {
+        let map = MiniMap {};
+        let from_zero = DijkstraMap::new(3, 1, &[0], &map, 10.);
+        let from_one = DijkstraMap::new(3, 1, &[1], &map, 10.);
+        let from_both = DijkstraMap::new(3, 1, &[0, 1], &map, 10.);
+
+        assert_eq!(from_zero.map, vec![0., 1., 3.]);
+        assert_eq!(from_one.map, vec![1., 0., 2.]);
+        assert_eq!(from_both.map, vec![0., 0., 2.]);
+    }
+
+    #[test]
+    fn test_new_weighted() {
+        let map = MiniMap {};
+        let from_zero = DijkstraMap::new_weighted(3, 1, &[(0, 1.)], &map, 10.);
+        let from_one = DijkstraMap::new_weighted(3, 1, &[(1, 0.)], &map, 10.);
+        let from_both = DijkstraMap::new_weighted(3, 1, &[(0, 1.), (1, 0.)], &map, 10.);
+
+        assert_eq!(from_zero.map, vec![1., 2., 4.]);
+        assert_eq!(from_one.map, vec![1., 0., 2.]);
+        assert_eq!(from_both.map, vec![1., 0., 2.]);
+    }
+
+    #[test]
+    fn test_new_empty() {
+        let map = DijkstraMap::new_empty(4, 1, 10.);
+
+        assert_eq!(map.map.len(), 4);
+        assert!(map.map.iter().all(|depth| *depth == f32::MAX));
+    }
+
+    #[test]
+    fn test_clear() {
+        let mut map = DijkstraMap::new_empty(4, 1, 10.);
+        map.map[1] = 1.;
+        map.map[3] = 3.;
+
+        DijkstraMap::clear(&mut map);
+
+        assert_eq!(map.map.len(), 4);
+        assert!(map.map.iter().all(|depth| *depth == f32::MAX));
+    }
+
+    #[test]
+    fn test_lowest_exit() {
+        let map = MiniMap {};
+        let exits_map = DijkstraMap::new(3, 1, &[0], &map, 10.);
+        let target = DijkstraMap::find_lowest_exit(&exits_map, 0, &map);
+        assert_eq!(target, Some(1));
+        let target = DijkstraMap::find_lowest_exit(&exits_map, 1, &map);
+        assert_eq!(target, Some(0));
+    }
+
     #[test]
     fn test_highest_exit() {
         let map = MiniMap {};

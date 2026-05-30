@@ -99,10 +99,10 @@ pub(crate) fn update_mouse_position(
         return;
     };
 
-    if let Some(screen_pos) = wnd.cursor_position() {
-        if let Ok(world_pos) = camera.viewport_to_world_2d(camera_transform, screen_pos) {
-            let result = (world_pos.x, world_pos.y);
-            context.set_mouse_pixel_position(result, &scaler);
-        }
+    if let Some(screen_pos) = wnd.cursor_position()
+        && let Ok(world_pos) = camera.viewport_to_world_2d(camera_transform, screen_pos)
+    {
+        let result = (world_pos.x, world_pos.y);
+        context.set_mouse_pixel_position(result, &scaler);
     }
 }

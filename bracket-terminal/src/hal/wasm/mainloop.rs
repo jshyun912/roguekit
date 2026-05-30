@@ -1,8 +1,8 @@
 use super::events::*;
 use super::*;
 use crate::hal::*;
-use crate::prelude::{BTerm, GameState, BACKEND_INTERNAL};
-use crate::{clear_input_state, BResult};
+use crate::prelude::{BACKEND_INTERNAL, BTerm, GameState};
+use crate::{BResult, clear_input_state};
 use glow::HasContext;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -52,7 +52,7 @@ pub fn main_loop<GS: GameState>(mut bterm: BTerm, mut gamestate: GS) -> BResult<
             bterm.shift = GLOBAL_MODIFIERS.0;
             bterm.control = GLOBAL_MODIFIERS.1;
             bterm.alt = GLOBAL_MODIFIERS.2;
-            bterm.web_button = GLOBAL_BUTTON.clone();
+            bterm.web_button = std::ptr::replace(std::ptr::addr_of_mut!(GLOBAL_BUTTON), None);
             bterm.on_mouse_position(GLOBAL_MOUSE_POS.0 as f64, GLOBAL_MOUSE_POS.1 as f64);
         }
 

@@ -117,11 +117,12 @@ impl<T: Algorithm2D + ?Sized> FovScanner<'_, T> {
     fn scan(&mut self, first_line: Scanline) {
         let mut stack = vec![first_line];
         let mut prev_tile;
-        while let Some(mut scanline) = stack.pop() {
+        while let Some(scanline) = stack.pop() {
             if scanline.depth * scanline.depth > self.radius_2 {
                 continue;
             }
             prev_tile = None;
+            let mut current_start_slope = scanline.start_slope;
             for tile in scanline.tiles() {
                 let tile_point = self.quadrant.transform(tile);
                 let dx = tile_point.x - self.quadrant.origin.x;
@@ -132,10 +133,11 @@ impl<T: Algorithm2D + ?Sized> FovScanner<'_, T> {
                     }
                     if let Some(prev_tile) = prev_tile {
                         if self.is_opaque(prev_tile) && !self.is_opaque(tile) {
-                            scanline.start_slope = slope(tile);
+                            current_start_slope = slope(tile);
                         }
                         if !self.is_opaque(prev_tile) && self.is_opaque(tile) {
                             let mut next_line = scanline.next();
+                            next_line.start_slope = current_start_slope;
                             next_line.end_slope = slope(tile);
                             stack.push(next_line);
                         }
@@ -143,10 +145,12 @@ impl<T: Algorithm2D + ?Sized> FovScanner<'_, T> {
                     prev_tile = Some(tile);
                 }
             }
-            if let Some(prev_tile) = prev_tile {
-                if !self.is_opaque(prev_tile) {
-                    stack.push(scanline.next());
-                }
+            if let Some(prev_tile) = prev_tile
+                && !self.is_opaque(prev_tile)
+            {
+                let mut next_line = scanline.next();
+                next_line.start_slope = current_start_slope;
+                stack.push(next_line);
             }
         }
     }
@@ -201,4 +205,89 @@ pub fn field_of_view<T: Algorithm2D + ?Sized>(
     field_of_view_set(start, range, fov_check)
         .into_iter()
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::field_of_view::symmetric_shadowcasting::{Cardinal, FovScanner, Quadrant, Scanline};
+    use bracket_algorithm_traits::prelude::{Algorithm2D, BaseMap};
+    use bracket_geometry::prelude::Point;
+    use num_rational::Rational32;
+
+    const MAP_W: i32 = 11;
+    const MAP_H: i32 = 11;
+
+    struct TestMap {
+        tiles: Vec<bool>,
+    }
+
+    impl TestMap {
+        fn new() -> Self {
+            Self {
+                tiles: vec![false; (MAP_W * MAP_H) as usize],
+            }
+        }
+
+        fn set_opaque(&mut self, point: Point) {
+            let idx = self.point2d_to_index(point);
+            self.tiles[idx] = true;
+        }
+    }
+
+    impl BaseMap for TestMap {
+        fn is_opaque(&self, idx: usize) -> bool {
+            self.tiles[idx]
+        }
+    }
+
+    impl Algorithm2D for TestMap {
+        fn dimensions(&self) -> Point {
+            Point::new(MAP_W, MAP_H)
+        }
+    }
+
+    fn scan_north_quadrant(
+        map: &TestMap,
+        origin: Point,
+        radius: i32,
+    ) -> std::collections::HashSet<Point> {
+        let radius_2 = radius * radius;
+        let radius_plus_half = Rational32::from_integer(radius) + Rational32::new(1, 2);
+        let radius_plus_half_2 = radius_plus_half * radius_plus_half;
+        let mut visible_points = std::collections::HashSet::new();
+        let mut scanner = FovScanner {
+            radius_2,
+            radius_plus_half_2,
+            quadrant: Quadrant::new(Cardinal::North, origin),
+            fov_check: map,
+            visible_points: &mut visible_points,
+        };
+        scanner.scan(Scanline::with_integers(1, -1, 1));
+        visible_points
+    }
+
+    #[test]
+    fn north_scan_continues_when_last_tile_is_transparent() {
+        let map = TestMap::new();
+        let origin = Point::new(5, 5);
+
+        let visible = scan_north_quadrant(&map, origin, 4);
+
+        assert!(visible.contains(&Point::new(5, 2)));
+    }
+
+    #[test]
+    fn north_scan_narrows_after_opaque_to_transparent_transition() {
+        let mut map = TestMap::new();
+        let origin = Point::new(5, 5);
+
+        // Depth 1, column -1 in the north quadrant.
+        map.set_opaque(Point::new(4, 4));
+        let visible = scan_north_quadrant(&map, origin, 5);
+
+        // Depth 2, column -2 should remain hidden behind the blocked segment.
+        assert!(!visible.contains(&Point::new(3, 3)));
+        // Depth 2, column -1 should still be visible through the opening.
+        assert!(visible.contains(&Point::new(4, 3)));
+    }
 }

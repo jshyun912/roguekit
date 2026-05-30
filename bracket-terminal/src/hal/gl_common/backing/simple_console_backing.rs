@@ -1,7 +1,7 @@
-use crate::hal::scaler::FontScaler;
-use crate::hal::{Font, Shader, VertexArray, VertexArrayEntry, BACKEND};
-use crate::prelude::Tile;
 use crate::BResult;
+use crate::hal::scaler::FontScaler;
+use crate::hal::{BACKEND, Font, Shader, VertexArray, VertexArrayEntry};
+use crate::prelude::Tile;
 use bracket_color::prelude::RGBA;
 
 pub struct SimpleConsoleBackend {
@@ -88,14 +88,13 @@ impl SimpleConsoleBackend {
         needs_resize: bool,
         font_scaler: FontScaler,
     ) {
-        if !needs_resize {
-            if let Some(old) = &self.previous_console {
-                if old.len() == tiles.len() {
-                    let no_change = tiles.iter().zip(old.iter()).all(|(a, b)| *a == *b);
-                    if no_change {
-                        return;
-                    }
-                }
+        if !needs_resize
+            && let Some(old) = &self.previous_console
+            && old.len() == tiles.len()
+        {
+            let no_change = tiles.iter().zip(old.iter()).all(|(a, b)| *a == *b);
+            if no_change {
+                return;
             }
         }
 
