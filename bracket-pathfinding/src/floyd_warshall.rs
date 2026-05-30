@@ -131,6 +131,26 @@ impl FloydWarshallMap {
 
 #[cfg(test)]
 mod test {
-
-
+    use crate::prelude::*;
+    use bracket_algorithm_traits::prelude::*;
+    // 1 by 3 stripe of tiles
+    struct MiniMap;
+    impl BaseMap for MiniMap {
+        fn get_available_exits(&self, idx: usize) -> SmallVec<[(usize, f32); 10]> {
+            match idx {
+                0 => smallvec![(1, 1.)],
+                2 => smallvec![(1, 1.)],
+                _ => smallvec![(idx - 1, 1.), (idx + 1, 2.)],
+            }
+        }
+    }
+    #[test]
+    fn test_highest_exit() {
+        let map = MiniMap {};
+        let exits_map = FloydWarshallMap::new(3, 1, &map, 10.);
+        let target = FloydWarshallMap::find_highest_exit(&exits_map, 0, &map);
+        assert_eq!(target, Some(1));
+        let target = FloydWarshallMap::find_highest_exit(&exits_map, 1, &map);
+        assert_eq!(target, Some(2));
+    }
 }

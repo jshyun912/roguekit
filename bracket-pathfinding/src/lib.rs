@@ -9,6 +9,7 @@ pub mod prelude {
     pub use crate::astar::*;
     pub use crate::dijkstra::*;
     pub use crate::field_of_view::*;
+    pub use crate::floyd_warshall::*;
     pub use bracket_algorithm_traits::prelude::*;
     pub use bracket_geometry::prelude::*;
 
