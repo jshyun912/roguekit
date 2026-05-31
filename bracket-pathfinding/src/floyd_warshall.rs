@@ -31,7 +31,9 @@ impl FloydWarshallMap {
         f
     }
 
-    // Helper for indexing the Floyd-Warshall distance map.
+    /// Helper for indexing the Floyd-Warshall distance map.
+    /// Converts a start node index and end node index into a
+    /// single index within the flattened depth_map array.
     pub fn idx_helper(&self, start_idx: usize, end_idx: usize) -> usize {
         start_idx * (self.size_x * self.size_y) + end_idx
     }
@@ -44,6 +46,11 @@ impl FloydWarshallMap {
                 let ste_idx = fm.idx_helper(start_idx, end_idx);
                 fm.depth_map[ste_idx] = fm.max_depth;
             }
+        }
+
+        for start_idx in 0..mapsize {
+            let idx = fm.idx_helper(start_idx, start_idx);
+            fm.depth_map[idx] = 0.;
         }
 
         for start_idx in 0..mapsize {
@@ -145,12 +152,24 @@ mod test {
 
     #[test]
     fn test_new() {
+        let map = MiniMap {};
 
+        let test_map = FloydWarshallMap::new(3, 1, &map, 10.);
+        assert_eq!(test_map.depth_map,
+            vec![0., 1., 3.,
+                 1., 0., 2.,
+                 2., 1., 0.]
+        );
     }
 
     #[test]
     fn test_lowest_exit() {
-
+        let map = MiniMap {};
+        let exits_map = FloydWarshallMap::new(3, 1, &map, 10.);
+        let target = FloydWarshallMap::find_lowest_exit(&exits_map, 0, &map);
+        assert_eq!(target, Some(1));
+        let target = FloydWarshallMap::find_lowest_exit(&exits_map, 1, &map);
+        assert_eq!(target, Some(0));
     }
 
     #[test]
