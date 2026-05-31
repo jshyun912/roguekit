@@ -42,13 +42,6 @@ impl FloydWarshallMap {
         let mapsize: usize = fm.size_x * fm.size_y;
 
         for start_idx in 0..mapsize {
-            for end_idx in 0..mapsize {
-                let ste_idx = fm.idx_helper(start_idx, end_idx);
-                fm.depth_map[ste_idx] = fm.max_depth;
-            }
-        }
-
-        for start_idx in 0..mapsize {
             let idx = fm.idx_helper(start_idx, start_idx);
             fm.depth_map[idx] = 0.;
         }
