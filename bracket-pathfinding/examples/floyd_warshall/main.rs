@@ -4,27 +4,27 @@ use bracket_pathfinding::prelude::*;
 use common::*;
 
 fn main() {
-/*     
     let map = Map::new();
 
     // Perform the search
     let flow_map = FloydWarshallMap::new(MAP_WIDTH, MAP_HEIGHT, &map, 1024.0);
+    let start_idx = map.point2d_to_index(START_POINT);
 
     // Draw the result
     for y in 0..MAP_HEIGHT {
-        let base_idx = map.point2d_to_index(Point::new(0, y));
         for x in 0..MAP_WIDTH {
-            let idx = base_idx + x;
+            let idx = y * MAP_WIDTH + x;
+            let depth_map_idx = flow_map.idx_helper(start_idx, idx);
 
             let tile = map.tiles[idx];
             let color = match tile {
                 '#' => RGB::named(YELLOW),
                 _ => {
-                    if flow_map.map[idx] < f32::MAX {
+                    if flow_map.depth_map[idx] < f32::MAX {
                         RGB::from_u8(
                             0,
                             255 - {
-                                let n = flow_map.map[idx] * 12.0;
+                                let n = flow_map.depth_map[depth_map_idx] * 12.0;
                                 if n > 255.0 { 255.0 } else { n }
                             } as u8,
                             0,
@@ -40,5 +40,4 @@ fn main() {
     }
     flush_console();
 
-    */
 }
