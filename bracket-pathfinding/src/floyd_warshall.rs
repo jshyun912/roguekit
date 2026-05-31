@@ -142,6 +142,17 @@ mod test {
             }
         }
     }
+
+    #[test]
+    fn test_new() {
+
+    }
+
+    #[test]
+    fn test_lowest_exit() {
+
+    }
+
     #[test]
     fn test_highest_exit() {
         let map = MiniMap {};
