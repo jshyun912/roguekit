@@ -68,7 +68,6 @@ impl FloydWarshallMap {
         }
     }
 
-
     /// Helper for traversing maps as path-finding. Provides the index of the lowest available
     /// exit from the specified position index, or None if there isn't one.
     /// You would use this for pathing TOWARDS a starting node.
@@ -148,11 +147,7 @@ mod test {
         let map = MiniMap {};
 
         let test_map = FloydWarshallMap::new(3, 1, &map, 10.);
-        assert_eq!(test_map.depth_map,
-            vec![0., 1., 3.,
-                 1., 0., 2.,
-                 2., 1., 0.]
-        );
+        assert_eq!(test_map.depth_map, vec![0., 1., 3., 1., 0., 2., 2., 1., 0.]);
     }
 
     #[test]
