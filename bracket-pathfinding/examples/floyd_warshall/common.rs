@@ -29,7 +29,6 @@ pub const MAP_WIDTH: usize = 80;
 pub const MAP_HEIGHT: usize = 20;
 pub const MAP_TILES: usize = MAP_WIDTH * MAP_HEIGHT;
 pub const START_POINT: Point = Point::constant(2, 2);
-pub const END_POINT: Point = Point::constant(MAP_WIDTH as i32 - 2, MAP_HEIGHT as i32 - 2);
 
 pub struct Map {
     pub tiles: Vec<char>,
