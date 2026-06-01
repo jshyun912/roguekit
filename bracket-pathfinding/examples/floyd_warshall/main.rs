@@ -20,7 +20,7 @@ fn main() {
             let color = match tile {
                 '#' => RGB::named(YELLOW),
                 _ => {
-                    if flow_map.depth_map[idx] < f32::MAX {
+                    if flow_map.depth_map[depth_map_idx] < f32::MAX {
                         RGB::from_u8(
                             0,
                             255 - {
