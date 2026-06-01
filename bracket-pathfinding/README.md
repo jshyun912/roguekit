@@ -105,7 +105,7 @@ Once you have the map, you can access individual distances at `flow_map.map` - o
 
 The example `dijkstra` demonstrates this.
 
-## Floyd-Washall Mapping 
+## Floyd-Warshall Mapping 
 
 Bracket-lib also includes Floyd-Warshall maps. Unlike Dijkstra maps, Floyd-Warshall computes the shortest path between every pair of points on the map.
 
@@ -138,7 +138,7 @@ There are four examples (ignore `common.rs` - it's shared code):
 
 * `astar` (`cargo run --example astar`), demonstrating A-Star pathing across a random map.
 * `dijkstra` (`cargo run --example dijkstra`), demonstrating Dijkstra mapping to two targets.
-* `floyd warshall` (`cargo run --example floyd_warshall`), demonstrating Dijkstra mapping to two targets.
+* `floyd warshall` (`cargo run --example floyd_warshall`), demonstrating all-pairs shortest-path mapping on a random map.
 * `fov` (`cargo run --example fov`), demonstrating field-of-view generation.
 
 These use `crossterm` for rendering to your terminal.
