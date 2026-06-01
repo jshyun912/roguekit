@@ -39,5 +39,4 @@ fn main() {
         print_color(RGB::named(WHITE), "\n");
     }
     flush_console();
-
 }
